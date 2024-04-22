@@ -250,7 +250,11 @@ function G.UIDEF.card_h_popup(card)
 	    if card.config.center.key then
 	      for k, v in pairs(Enhancements) do
 		    if v.slug == card.config.center.key then
-		      badges[#badges] = create_badge(card.ability.name, G.C.SECONDARY_SET.Enhanced, nil, 1.2)
+			  local gen = generate_fake_badges(card, {})
+			  for k,v in pairs(gen) do
+			    badges[#badges + 1] = create_badge(localize(v, "labels"), get_badge_colour(v))
+			  end
+		      badges[1] = create_badge(card.ability.name, G.C.SECONDARY_SET.Enhanced, nil, 1.2)
 			  local mod_name = Enhancements[k].mod_name
 			  mod_name = mod_name:sub(1, 16)
 			  local len = string.len(mod_name)
@@ -335,15 +339,9 @@ function print_table(_table, idx)
   end
 end
 
-function generate_badges(card, loc_vars)
+function generate_fake_badges(card, loc_vars)
     local badges = {
     }
-    if (card_type ~= 'Locked' and card_type ~= 'Undiscovered' and card_type ~= 'Default') or card.debuff then
-        badges.card_type = card_type
-    end
-    if card.ability.set == 'Joker' and card.bypass_discovery_ui then
-        badges.force_rarity = true
-    end
     if card.edition then
         if card.edition.type == 'negative' and card.ability.consumeable then
             badges[(#badges or 0) + 1] = 'negative_consumable'
