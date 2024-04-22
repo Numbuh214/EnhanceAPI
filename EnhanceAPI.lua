@@ -9,7 +9,7 @@
 function SMODS.INIT.EnhanceAPI()
   Enhancements = {}
   E_ROWS = 2
-  E_COLS = 4
+  E_COLS = 5
   sendInfoMessage("Loaded!", 'EnhanceAPI')
 end
 
@@ -70,7 +70,7 @@ function create_UIBox_your_collection_enhancements(exit)
   cols = E_COLS
   local count = math.min(cols * rows, #G.P_CENTER_POOLS["Enhanced"])
   local table_amount = get_best_table_number(count, rows)
-  sendDebugMessage("Best is "..table_amount.."...?")
+  --sendDebugMessage("Best is "..table_amount.."...?")
   G.your_collection = {}
   for j = 1, rows do
     G.your_collection[j] = CardArea(
@@ -105,25 +105,22 @@ function create_UIBox_your_collection_enhancements(exit)
   end
 
   local enhance_options = {}
+  
+  local t = create_UIBox_generic_options({ infotip = localize('ml_edition_seal_enhancement_explanation'), back_func = exit or 'your_collection', snap_back = true, contents = {
+            {n=G.UIT.R, config={align = "cm", minw = 2.5, padding = 0.1, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables},
+          }})
+		  
   if #G.P_CENTER_POOLS["Enhanced"] > rows * cols then
     for i = 1, math.ceil(#G.P_CENTER_POOLS.Enhanced/(rows*cols)) do
       table.insert(enhance_options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#G.P_CENTER_POOLS.Enhanced/(rows*cols))))
     end
-  end
-  
-  -- local t = create_UIBox_generic_options({ back_func = exit or 'your_collection', contents = {
-            -- {n=G.UIT.R, config={align = "cm", minw = 2.5, padding = 0.1, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables},
-                  -- {n=G.UIT.R, config={align = "cm"}, nodes={
-                    -- create_option_cycle({options = enhance_options, w = 4.5, cycle_shoulders = true, opt_callback = 'your_collection_enhancements', focus_args = {snap_to = true, nav = 'wide'},current_option = 1, colour = G.C.RED, no_pips = true})
-                  -- }}
-          -- }})
-
-  local t = create_UIBox_generic_options({ infotip = localize('ml_edition_seal_enhancement_explanation'), back_func = exit or 'your_collection', snap_back = true, contents = {
+    t = create_UIBox_generic_options({ infotip = localize('ml_edition_seal_enhancement_explanation'), back_func = exit or 'your_collection', snap_back = true, contents = {
             {n=G.UIT.R, config={align = "cm", minw = 2.5, padding = 0.1, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables},
 			{n=G.UIT.R, config={align = "cm"}, nodes={
                     create_option_cycle({options = enhance_options, w = 4.5, cycle_shoulders = true, opt_callback = 'your_collection_enhancements_page', focus_args = {snap_to = true, nav = 'wide'},current_option = 1, r = rows, c = cols, colour = G.C.RED, no_pips = true})
                   }}
           }})
+  end
   return t
 end
 
@@ -214,7 +211,7 @@ function Card:set_sprites(_center, _front)
 	  if _center and _center.key then
 	    for i=1, 8 do
 		  local v = G.P_CENTER_POOLS["Enhanced"][i]
-		  sendDebugMessage("("..v.key.." = ".._center.key..") ...?")
+		  --sendDebugMessage("("..v.key.." = ".._center.key..") ...?")
 		  if v.key == _center.key and v.key ~= "m_stone" and self.children.front ~= nil then 
 			_front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], self.config.card.pos) --reset for vanilla enhancements
 			break
@@ -235,11 +232,18 @@ function align_layer(card, v)
 	end
 end
 
+local copy_ref = copy_card
+function copy_card(other, new_card, card_scale, playing_card, strip_edition)
+   local postage = copy_ref(other, new_card, card_scale, playing_card, strip_edition)
+   postage:set_sprites(postage.config.center, nil)
+   return postage
+end
+
 local card_h_popup_ref = G.UIDEF.card_h_popup
 function G.UIDEF.card_h_popup(card)
 	local t = card_h_popup_ref(card)
 	local badges = t.nodes[1].nodes[1].nodes[1].nodes[3]
-	sendDebugMessage("Looking for badges...")
+	--sendDebugMessage("Looking for badges...")
 	badges = badges and badges.nodes or nil
 	if card.config then
 	  if card.config.center then
