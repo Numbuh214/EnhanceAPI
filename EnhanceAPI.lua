@@ -65,7 +65,7 @@ function create_UIBox_your_collection_enhancements(exit)
   local deck_tables = {}
   local rows, cols = 0, 0
   local page = 0
-  
+
   rows = E_ROWS
   cols = E_COLS
   local count = math.min(cols * rows, #G.P_CENTER_POOLS["Enhanced"])
@@ -82,7 +82,7 @@ function create_UIBox_your_collection_enhancements(exit)
     {n=G.UIT.R, config={align = "cm", padding = 0, no_fill = true}, nodes={
       {n=G.UIT.O, config={object = G.your_collection[j]}}
     }}
-    ) 
+    )
   end
   --sendDebugMessage("There are "..#G.P_CENTER_POOLS["Enhanced"].." enhancements.")
   local offset = 0
@@ -105,11 +105,11 @@ function create_UIBox_your_collection_enhancements(exit)
   end
 
   local enhance_options = {}
-  
+
   local t = create_UIBox_generic_options({ infotip = localize('ml_edition_seal_enhancement_explanation'), back_func = exit or 'your_collection', snap_back = true, contents = {
             {n=G.UIT.R, config={align = "cm", minw = 2.5, padding = 0.1, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables},
           }})
-		  
+
   if #G.P_CENTER_POOLS["Enhanced"] > rows * cols then
     for i = 1, math.ceil(#G.P_CENTER_POOLS.Enhanced/(rows*cols)) do
       table.insert(enhance_options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#G.P_CENTER_POOLS.Enhanced/(rows*cols))))
@@ -136,7 +136,7 @@ G.FUNCS.your_collection_enhancements_page = function(args)
   local count = rows * cols
   local offset = (rows * cols)*(page-1)
   sendDebugMessage("Page offset: "..tostring(offset))
-  
+
   for j=1, #G.your_collection do
     for i=#G.your_collection[j].cards,1,-1 do
 	  if G.your_collection[j] ~= nil then
@@ -146,7 +146,7 @@ G.FUNCS.your_collection_enhancements_page = function(args)
 	  end
 	end
   end
-  
+
   for j = 1, rows do
     for i = 1, cols do
 	  if count%rows > 0 and i <= count%rows and j == cols then
@@ -212,7 +212,7 @@ function Card:set_sprites(_center, _front)
 	    for i=1, 8 do
 		  local v = G.P_CENTER_POOLS["Enhanced"][i]
 		  --sendDebugMessage("("..v.key.." = ".._center.key..") ...?")
-		  if v.key == _center.key and v.key ~= "m_stone" and self.children.front ~= nil then 
+		  if v.key == _center.key and v.key ~= "m_stone" and self.children.front ~= nil then
 			_front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], self.config.card.pos) --reset for vanilla enhancements
 			break
 		  end
@@ -323,7 +323,7 @@ function print_table(_table, idx)
     sendDebugMessage("nil value.")
     return
   end
-  if type(_table) == 'table' then    
+  if type(_table) == 'table' then
     for k, v in pairs(_table) do
       if type(v) == 'table' then
 	    sendDebugMessage(spc..k..":")
@@ -361,7 +361,7 @@ function generate_badges(card, loc_vars)
     if card.pinned then badges[(#badges or 0) + 1] = 'pinned_left' end
 
     if card.sticker then loc_vars = loc_vars or {}; loc_vars.sticker=card.sticker end
-    
+
     return badges
 end
 
@@ -384,10 +384,10 @@ function fake_localize(_c, loc_vars, def_scale)
     --sendDebugMessage("---------------------------------------------")
 
     --sendDebugMessage("---------------------------------------------")
-	
+
     local default = {}
     local formatting = {{}}
-	
+
     --replace loc_var values
     for j=1, #loc_text do
       if type(loc_text[j][1]) == table then break
@@ -400,7 +400,7 @@ function fake_localize(_c, loc_vars, def_scale)
 		--sendDebugMessage(" "..default[j])
         end
     end
-	
+
 	if loc_vars.bonus_chips then
 	  table.insert(loc_text, 1, "{C:chips}+"..loc_vars.bonus_chips.."{} bonus chips")
 	end
@@ -432,7 +432,7 @@ function fake_localize(_c, loc_vars, def_scale)
         if formatting[i][j] == nil then
           formatting[i][j] = {
             n = 1,
-            config = 
+            config =
             {
               colour = G.C.BLACK,
               text = "",
@@ -490,7 +490,7 @@ function fake_localize(_c, loc_vars, def_scale)
               elseif letter == "X" then
                 var = (var or 'WHITE')
 				formatting[i][j].nodes = {}
-				formatting[i][j].nodes[1] = { 
+				formatting[i][j].nodes[1] = {
 				  n = 1
 				}
 			    formatting[i][j].nodes[1].config =
