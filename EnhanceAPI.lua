@@ -14,7 +14,7 @@ function SMODS.INIT.EnhanceAPI()
 end
 
 function newEnhancement(args)
-  local _t = args.vars
+  local _t = args
   local v = {
     name = _t.name,
 	slug = _t.slug,
