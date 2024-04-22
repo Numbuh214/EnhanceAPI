@@ -13,11 +13,12 @@ function SMODS.INIT.EnhanceAPI()
   sendInfoMessage("Loaded!", 'EnhanceAPI')
 end
 
-function newEnhancement(_t)
+function newEnhancement(args)
+  local _t = args.vars
   local v = {
     name = _t.name,
 	slug = _t.slug,
-	sprite = _t.sprite or _t.name,
+	atlas = _t.atlas or _t.name,
 	config = _t.config,
 	pos = _t.pos,
 	loc_txt = _t.loc_txt,
@@ -329,11 +330,13 @@ function print_table(_table, idx)
   end
   if type(_table) == 'table' then
     for k, v in pairs(_table) do
-      if type(v) == 'table' then
-	    sendDebugMessage(spc..k..":")
-	    print_table(v, idx+1)
-	  else
-        sendDebugMessage(spc..k..": "..tostring(v))
+	  if k ~= 'children' and k ~= 'nodes' and k ~= 'Mid' then
+        if type(v) == 'table' then
+	      sendDebugMessage(spc..k..":")
+	      print_table(v, idx+1)
+	    else
+          sendDebugMessage(spc..k..": "..tostring(v))
+	    end
 	  end
     end
   end
