@@ -41,6 +41,12 @@ function newEnhancement(args)
   table.insert(Enhancements, v)
 end
 
+local createcard_ref = create_card
+function create_card(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
+    sendDebugMessage(tostring(_type))
+	return createcard_ref(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
+end
+
 function getEnhancement(name)
     for k,v in pairs(Enhancements) do
       if v.name == name then
@@ -179,6 +185,24 @@ function Card:set_ability(center, initial, delay_sprites)
   return setability_ref(self, center, initial, delay_sprites)
 end
 
+function sprites_debug(self, _center, _front)
+	  local keys = {
+	    "nil",
+	    "nil",
+	    "nil"
+	  }
+	  if self.key ~= nil then
+	    keys[1] = self.key
+	  end
+	  if _center ~= nil and _center.key ~= nil then
+	    keys[2] = _center.key
+	  end
+	  if _front ~= nil and _front.key ~= nil then
+	    keys[3] = _front.key
+	  end
+	  sendDebugMessage(keys[1]..", "..keys[2]..", "..keys[3])
+end
+
 local setsprites_ref = Card.set_sprites
 function Card:set_sprites(_center, _front)
 	if not _center or not _center.key then return setsprites_ref(self,_center,_front) end
@@ -211,7 +235,8 @@ function Card:set_sprites(_center, _front)
 	  if _center.order <= 9 then
 		c_atlas = "centers"
 	  end
-	  print_table(self.ability)
+	  sendDebugMessage("self.ability: ")
+	  print_table(self.ability,1)
 	  if self.ability ~= nil then
 	    if self.ability.display_face == nil or self.ability.display_face == true then
 	      self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[atlas], self.config.card.pos)
@@ -221,6 +246,8 @@ function Card:set_sprites(_center, _front)
           self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS['centers'], {x = 1, y = 0})
           self.children.center:set_sprite_pos({x = 1, y = 0})
 	    end
+	  else
+	    return setsprites_ref(self, _center, _front)
 	  end
       align_layer(self, self.children.front)
       align_layer(self, self.children.center)
@@ -335,7 +362,7 @@ function print_table(_table, idx)
     spc = " "..spc
   end
   if tostring(_table) == 'nil' then
-    sendDebugMessage("nil value.")
+    sendDebugMessage(spc.."nil value.")
     return
   end
   if type(_table) == 'table' then
