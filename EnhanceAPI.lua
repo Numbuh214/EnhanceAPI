@@ -192,7 +192,7 @@ function Card:set_sprites(_center, _front)
     if enhancement then
 	  local atlas = "cards_"..(G.SETTINGS.colourblind_option and 2 or 1)
 	  local _format =  "card_atlas_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast"
-	  if (self.base.suit_nominal > 0.04) then
+	  if (self.base and self.base.suit_nominal > 0.04) then
 	    sendDebugMessage("Looking for \"".._format.."\"")
 	    for k,v in pairs(SMODS.Card.SUITS[self.base.suit]) do
 	      if k == _format then
@@ -203,7 +203,9 @@ function Card:set_sprites(_center, _front)
 	      sendDebugMessage(k.." is not the key")
 		end
 	  else
-	    sendDebugMessage(self.base.suit.." is a vanilla suit. Using \""..atlas.."\"...")
+	    if self.base then
+		  sendDebugMessage(self.base.suit.." is a vanilla suit. Using \""..atlas.."\"...")
+		end
 	  end
 	  local c_atlas = _center.atlas
 	  if _center.order <= 9 then
