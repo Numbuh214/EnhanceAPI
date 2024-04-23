@@ -194,11 +194,11 @@ function Card:set_sprites(_center, _front)
     if enhancement then
 	  if self.ability and self.ability.extra.display_face then
 	    if (self.base.suit_nominal > 0.04) then
-		  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.Card.SUITS[self.base.suit]["card_atlas_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast"], self.config.card.pos)
-		  sendDebugMessage("card_atlas_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast")
+		  sendDebugMessage("card_atlas_"..string.gsub(string.lower(self.base.suit)," ","_").."_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast")
+		  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.Card.SUITS[self.base.suit]["card_atlas_"..string.gsub(string.lower(self.base.suit)," ","_").."_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast"], self.config.card.pos)
 		else
-	      self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], self.config.card.pos)
 		  sendDebugMessage("cards_"..(G.SETTINGS.colourblind_option and 2 or 1))
+	      self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], self.config.card.pos)
 		end
 		local pos = G.P_CENTERS[self.config.center_key].pos
         self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[self.config.center_key], pos or {x=0,y=0})
