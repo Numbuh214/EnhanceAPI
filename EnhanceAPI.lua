@@ -29,9 +29,8 @@ function newEnhancement(args)
   v.mod_name = SMODS._MOD_NAME
   v.badge_colour = SMODS._BADGE_COLOUR
   v.key = v.slug
-  if not v.config.extra then v.config.extra = {} end
-  v.config.extra.playing_card = _t.playing_card
-  v.config.extra.display_face = _t.display_face
+  v.config.playing_card = _t.playing_card
+  v.config.display_face = _t.display_face
   G.P_CENTERS[v.slug] = v
   G.P_CENTER_POOLS['Enhanced'][v.order-1] = v
   G.localization.descriptions['Enhanced'][v.slug]= {
@@ -182,30 +181,44 @@ end
 
 local setsprites_ref = Card.set_sprites
 function Card:set_sprites(_center, _front)
+	if not _center or not _center.key then return setsprites_ref(self,_center,_front) end
 	local enhancement = false
-	if _center and _center.key then
-	  for k, v in pairs(Enhancements) do
-	    if v.key == _center.key then
-		  enhancement = true
-		  break
-	    end
-      end
+	for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
+	  if v.key == _center.key then
+	    enhancement = true
+	    break
+	  end
 	end
     if enhancement then
-	  if self.ability and self.ability.extra.display_face then
-	    if (self.base.suit_nominal > 0.04) then
-		  sendDebugMessage("card_atlas_"..string.gsub(string.lower(self.base.suit)," ","_").."_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast")
-		  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.Card.SUITS[self.base.suit]["card_atlas_"..string.gsub(string.lower(self.base.suit)," ","_").."_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast"], self.config.card.pos)
-		else
-		  sendDebugMessage("cards_"..(G.SETTINGS.colourblind_option and 2 or 1))
-	      self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], self.config.card.pos)
+	  local atlas = "cards_"..(G.SETTINGS.colourblind_option and 2 or 1)
+	  local _format =  "card_atlas_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast"
+	  if (self.base.suit_nominal > 0.04) then
+	    sendDebugMessage("Looking for \"".._format.."\"")
+	    for k,v in pairs(SMODS.Card.SUITS[self.base.suit]) do
+	      if k == _format then
+	        sendDebugMessage(k.." is the key. Using \""..v.."\"...")
+	        atlas = v
+	        break
+	      end
+	      sendDebugMessage(k.." is not the key")
 		end
-		local pos = G.P_CENTERS[self.config.center_key].pos
-        self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[self.config.center_key], pos or {x=0,y=0})
 	  else
-        self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[self.config.center_key], self.config.card.pos)
-        self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS['centers'], {x = 1, y = 0})
-        self.children.center:set_sprite_pos({x = 1, y = 0})
+	    sendDebugMessage(self.base.suit.." is a vanilla suit. Using \""..atlas.."\"...")
+	  end
+	  local c_atlas = _center.atlas
+	  if _center.order <= 9 then
+		c_atlas = "centers"
+	  end
+	  print_table(self.ability)
+	  if self.ability ~= nil then
+	    if self.ability.display_face == nil or self.ability.display_face == true then
+	      self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[atlas], self.config.card.pos)
+          self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[c_atlas], _center.pos or {x=0,y=0})
+	    else
+          self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[c_atlas], _center.pos or self.config.card.pos)
+          self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS['centers'], {x = 1, y = 0})
+          self.children.center:set_sprite_pos({x = 1, y = 0})
+	    end
 	  end
       align_layer(self, self.children.front)
       align_layer(self, self.children.center)
@@ -214,16 +227,6 @@ function Card:set_sprites(_center, _front)
         align_layer(self, self.children.back)
       end
 	else
-	  if _center and _center.key then
-	    for i=1, 8 do
-		  local v = G.P_CENTER_POOLS["Enhanced"][i]
-		  --sendDebugMessage("("..v.key.." = ".._center.key..") ...?")
-		  if v.key == _center.key and v.key ~= "m_stone" and self.children.front ~= nil then
-			_front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], self.config.card.pos) --reset for vanilla enhancements
-			break
-		  end
-		end
-	  end
 	  return setsprites_ref(self, _center, _front)
     end
 end
