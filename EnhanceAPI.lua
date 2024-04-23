@@ -193,8 +193,13 @@ function Card:set_sprites(_center, _front)
 	end
     if enhancement then
 	  if self.ability and self.ability.extra.display_face then
-	    self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], self.config.card.pos)
-		sendDebugMessage("G.ASSET_ATLAS["..self.config.center_key.."] is "..tostring(G.ASSET_ATLAS[self.config.center_key]))
+	    if (self.base.suit_nominal > 0.04) then
+		  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.Card.SUITS[self.base.suit]["card_atlas_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast"], self.config.card.pos)
+		  sendDebugMessage("card_atlas_"..(G.SETTINGS.colourblind_option and "high" or "low").."_contrast")
+		else
+	      self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], self.config.card.pos)
+		  sendDebugMessage("cards_"..(G.SETTINGS.colourblind_option and 2 or 1))
+		end
 		local pos = G.P_CENTERS[self.config.center_key].pos
         self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[self.config.center_key], pos or {x=0,y=0})
 	  else
@@ -374,7 +379,7 @@ function fake_localize(_c, loc_vars, def_scale)
       --loc_text = G.localization.descriptions["Enhanced"][loc_vars.new_enhance].text
 	-- else
       loc_text = G.localization.descriptions["Enhanced"][_c.key].text
-	  print_table(loc_text)
+	  --print_table(loc_text)
 	-- end
     --sendDebugMessage("G.localization.descriptions[".._c.set.."][".._c.key.."].text has "..#loc_text.." lines...?")
     --local times = (#loc_vars == 1 and "once") or (#loc_vars == 2 and "twice") or #loc_vars.." times"
