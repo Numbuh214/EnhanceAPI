@@ -202,17 +202,27 @@ local setsprites_ref = Card.set_sprites
 function Card:set_sprites(_center, _front)
   if _center and self.ability and (self.ability.set == "Enhanced" or self.ability.set == "Default") then
     local atlas = _center.atlas
+	local rank_pos = {x = 0, y = 0}
+	if self.base and self.base.value and self.base.suit then
+	  sendDebugMessage(self.base.name.." has base: "..self.base.value.." of "..self.base.suit)
+	  rank_pos.x = SMODS.Card.RANKS[self.base.value].pos.x
+	  rank_pos.y = SMODS.Card.SUITS[self.base.suit].pos.y
+	elseif self.base.suit then
+	  sendDebugMessage(self.base.name.." has base suit, but no value.")
+	elseif self.base.value then
+	  sendDebugMessage(self.base.name.." has base value, but no suit.")
+	elseif self.base then
+	  sendDebugMessage(self.base.name.." has no base suit or value.")
+	end
 	if G.SETTINGS.colourblind_option and _center.atlas ~= _center.atlas_hc then
-	  --sendDebugMessage("High contrast found, nice!")
 	  atlas = _center.atlas_hc
 	end
-	sendDebugMessage(tostring(_center.config.display_rank))
 	if _center.config.display_rank == false then
-	  --sendDebugMessage("Should be hiding normal front part.")
 	  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[atlas or 'centers'], _center.pos or {x = 1, y = 0})
 	  self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS['centers'], {x = 1, y = 0})
 	else
-	  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[default_atlas(self)], self.config.card.pos)
+	  --sendDebugMessage("default atlas is "..tostring(default_atlas(self)))
+	  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[default_atlas(self)], rank_pos)
 	  self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[atlas or 'centers'], _center.pos or {x = 1, y = 0})
 	end
 	align_layer(self, "front")
@@ -227,16 +237,28 @@ function Card:set_sprites(_center, _front)
 end
 
 function default_atlas(card)
-  contrast = G.SETTINGS.colourblind_option
+  local contrast = G.SETTINGS.colourblind_option
+  local atlas = nil
   if card.base then
-    if SMODS.Card.RANKS[card.base.value] then
-	  return SMODS.Card.RANKS[card.base.value]["atlas_"..(contrast and "high" or "low").."_contrast"]
+    if card.base.suit_nominal > 0.04 then
+	  --print_table(SMODS.Card.SUITS[card.base.suit])
+	  if contrast then
+	    atlas = SMODS.Card.SUITS[card.base.suit].card_atlas_high_contrast
+	  else
+	    atlas = SMODS.Card.SUITS[card.base.suit].card_atlas_low_contrast
+	  end
 	end
-    if SMODS.Card.SUITS[card.base.suit] then
-	  return SMODS.Card.SUITS[card.base.suit]["card_atlas_"..(contrast and "high" or "low").."_contrast"]
+    if SMODS.Card.RANKS[card.base.value] then
+	  if contrast then
+	    atlas = SMODS.Card.RANKS[card.base.value].atlas_high_contrast
+	  else
+	    atlas = SMODS.Card.RANKS[card.base.value].atlas_low_contrast
+	  end
 	end
   end
-  return "cards_"..(contrast and 2 or 1)
+  atlas = atlas or "cards_"..(contrast and 2 or 1)
+  --sendDebugMessage("default atlas is "..atlas)
+  return atlas
 end
 
 function align_layer(card, layer)
