@@ -47,7 +47,7 @@ end
 
 local createcard_ref = create_card
 function create_card(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
-    sendDebugMessage(tostring(_type))
+    --sendDebugMessage(tostring(_type))
     return createcard_ref(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
 end
 
@@ -88,7 +88,7 @@ function create_UIBox_your_collection_enhancements(exit)
   end
   table.sort(enhanced, function(a,b) return a.order < b.order end)
   for k, v in pairs(enhanced) do
-    sendDebugMessage(tostring(v.key))
+    --sendDebugMessage(tostring(v.key))
   end
   --sendDebugMessage("Best is "..table_amount.."...?")
   G.your_collection = {}
