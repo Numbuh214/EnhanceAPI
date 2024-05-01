@@ -203,16 +203,30 @@ function Card:set_sprites(_center, _front)
   if _center and self.ability and (self.ability.set == "Enhanced" or self.ability.set == "Default") then
     local atlas = _center.atlas
 	local rank_pos = {x = 0, y = 0}
-	if self.base and self.base.value and self.base.suit then
-	  --sendDebugMessage(self.base.name.." has base: "..self.base.value.." of "..self.base.suit)
-	  sendDebugMessage(SMODS.Card.SUITS[self.base.suit].card_pos.y)
+	local hide_rank = false
+	local has_ranks = true
+	local has_suits = true
+	for k, v in pairs(Enhancements) do
+	  if v.slug == _center.key then
+	    hide_rank = v.config.display_rank == false
+		has_suits = v.config.has_suits
+		has_ranks = v.config.has_ranks
+	  end
+	end
+	if has_ranks and self.base and self.base.value then
 	  rank_pos.x = SMODS.Card.RANKS[self.base.value].pos.x
-	  rank_pos.y = SMODS.Card.SUITS[self.base.suit].card_pos.y
+	elseif has_ranks and self.config and self.config.card then
+	  rank_pos.x = SMODS.Card.RANKS[self.config.card.value].pos.x
+	end
+	if has_suits and self.base and self.base.suit then
+	  rank_pos.y = SMODS.Card.SUITS[self.config.card.suit].card_pos.y
+	elseif has_suits and self.config and self.config.card then
+	  rank_pos.y = SMODS.Card.SUITS[self.config.card.suit].card_pos.y
 	end
 	if G.SETTINGS.colourblind_option and _center.atlas ~= _center.atlas_hc then
 	  atlas = _center.atlas_hc
 	end
-	if _center.config.display_rank == false then
+	if hide_rank then
 	  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[atlas or 'centers'], _center.pos or {x = 1, y = 0})
 	  self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS['centers'], {x = 1, y = 0})
 	else
@@ -233,26 +247,20 @@ end
 
 function default_atlas(card)
   local contrast = G.SETTINGS.colourblind_option
-  local atlas = nil
+  local atlas = {}
+  local suit_val = 0
+  local rank_val = 0
   if card.base then
-    if card.base.suit_nominal > 0.04 then
-	  --print_table(SMODS.Card.SUITS[card.base.suit])
-	  if contrast then
-	    atlas = SMODS.Card.SUITS[card.base.suit].card_atlas_high_contrast
-	  else
-	    atlas = SMODS.Card.SUITS[card.base.suit].card_atlas_low_contrast
-	  end
-	end
-    if SMODS.Card.RANKS[card.base.value] then
-	  if contrast then
-	    atlas = SMODS.Card.RANKS[card.base.value].atlas_high_contrast
-	  else
-	    atlas = SMODS.Card.RANKS[card.base.value].atlas_low_contrast
-	  end
-	end
+    suit_val = card.base.suit
+  elseif card.config.card then
+    suit_val = card.config.card.suit
+  end
+  if contrast then
+	atlas = SMODS.Card.SUITS[suit_val].card_atlas_high_contrast
+  else
+	atlas = SMODS.Card.SUITS[suit_val].card_atlas_low_contrast
   end
   atlas = atlas or "cards_"..(contrast and 2 or 1)
-  --sendDebugMessage("default atlas is "..atlas)
   return atlas
 end
 
