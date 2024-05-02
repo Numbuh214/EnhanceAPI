@@ -213,15 +213,19 @@ function Card:set_sprites(_center, _front)
 		has_ranks = v.config.has_ranks
 	  end
 	end
-	if has_ranks and self.base and self.base.value then
+	if has_ranks and self.base and self.base.value and SMODS.Card.RANKS[self.base.value] then
 	  rank_pos.x = SMODS.Card.RANKS[self.base.value].pos.x
-	elseif has_ranks and self.config and self.config.card then
+	elseif has_ranks and self.config and self.config.card and SMODS.Card.RANKS[self.config.card.value] then
 	  rank_pos.x = SMODS.Card.RANKS[self.config.card.value].pos.x
+	elseif _front then
+      rank_pos.x = _front.pos.x or 0
 	end
-	if has_suits and self.base and self.base.suit then
+	if has_suits and self.base and self.base.suit and SMODS.Card.SUITS[self.base.suit] then
 	  rank_pos.y = SMODS.Card.SUITS[self.config.card.suit].card_pos.y
-	elseif has_suits and self.config and self.config.card then
+	elseif has_suits and self.config and self.config.card and SMODS.Card.SUITS[self.config.card.suit] then
 	  rank_pos.y = SMODS.Card.SUITS[self.config.card.suit].card_pos.y
+	elseif _front then
+      rank_pos.x = _front.pos.y
 	end
 	if G.SETTINGS.colourblind_option and _center.atlas ~= _center.atlas_hc then
 	  atlas = _center.atlas_hc
@@ -231,7 +235,7 @@ function Card:set_sprites(_center, _front)
 	  self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS['centers'], {x = 1, y = 0})
 	else
 	  --sendDebugMessage("default atlas is "..tostring(default_atlas(self)))
-	  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[default_atlas(self)], rank_pos)
+	  self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[default_atlas(self) or "cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], rank_pos)
 	  self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[atlas or 'centers'], _center.pos or {x = 1, y = 0})
 	end
 	align_layer(self, "front")
@@ -247,7 +251,7 @@ end
 
 function default_atlas(card)
   local contrast = G.SETTINGS.colourblind_option
-  local atlas = {}
+  local atlas = nil
   local suit_val = 0
   local rank_val = 0
   if card.base then
@@ -255,13 +259,24 @@ function default_atlas(card)
   elseif card.config.card then
     suit_val = card.config.card.suit
   end
+  if not SMODS.Card.SUITS[suit_val] then
+    return "cards_"..(contrast and 2 or 1)
+  end
   if contrast then
-	atlas = SMODS.Card.SUITS[suit_val].card_atlas_high_contrast
+	atlas = SMODS.Card.SUITS[suit_val].card_atlas_high_contrast 
   else
 	atlas = SMODS.Card.SUITS[suit_val].card_atlas_low_contrast
   end
-  atlas = atlas or "cards_"..(contrast and 2 or 1)
   return atlas
+end
+
+function find_suit(y)
+  for k, v in pairs(SMODS.Card.SUITS) do
+    if y == v.card_pos.y then
+	  return v
+	end
+  end
+  return nil
 end
 
 function align_layer(card, layer)
