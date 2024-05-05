@@ -34,6 +34,7 @@ function newEnhancement(args)
   v.config.playing_card = _t.playing_card
   v.config.display_rank = _t.display_rank
   v.VT = { w = 0, h = 0 }
+  v.loc_vars = _t.loc_vars or {}
   
   G.P_CENTERS[v.key] = v
   G.P_CENTER_POOLS['Enhanced'][v.order-1] = v
@@ -299,49 +300,63 @@ end
 
 local generate_UIBox_ability_table_ref = Card.generate_UIBox_ability_table
 function Card:generate_UIBox_ability_table()
-    local fl_vars = {
-      new_enhance = nil
-    }
+    local new_enhance = nil
+	local loc_template = nil
     for k, v in pairs(Enhancements) do
       if v.name == self.ability.name then
-        fl_vars.new_enhance = v.slug
+        new_enhance = k
+		loc_template = v.loc_vars
         break
       end
     end
-    if not fl_vars or fl_vars.new_enhance == nil then
+    if new_enhance == nil then
       real_ui_table = generate_UIBox_ability_table_ref(self)
       return real_ui_table
     else
-      sendDebugMessage("Enhancement is "..tostring(fl_vars.new_enhance))
-      fl_vars.nominal_chips = self.base.nominal > 0 and self.base.nominal or nil
-      fl_vars.bonus_chips = (self.ability.bonus + (self.ability.perma_bonus or 0)) > 0 and (self.ability.bonus + (self.ability.perma_bonus or 0)) or nil
-      local fake_card = Card(-100, -100, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS['m_mult'])
-      local fake_ui_table = generate_UIBox_ability_table_ref(fake_card)
-      fake_ui_table.main = fake_localize(self.config.center, fl_vars, fake_ui_table.main[1][1].config.scale)
-      fake_ui_table.name = {}
-      if (self.ability.set == 'Default' or self.ability.set == 'Enhanced') and self.ability.playing_card == true and fake_ui_table.name ~= nil and fake_ui_table:len() > 0 then
-        fl_vars.value = self.base.value
-        fl_vars.suit = self.base.suit
-        fl_vars.colour = self.base.colour
-        localize{type = 'other', key = 'playing_card', set = 'Other', nodes = full_UI_table.name, vars = {localize(fl_vars.value, 'ranks') or fl_vars.value, localize(fl_vars.suit, 'suits_plural'), colours = {fl_vars.colour}}}
-      end
-      fake_card:start_dissolve({G.C.BLACK},true,0.0,true)
-      return fake_ui_table
+      sendDebugMessage("Enhancement is "..tostring(Enhancements[new_enhance].slug))
+	  local loc_vars = {}
+	  print_table(loc_template)
+	  sendDebugMessage("-----------------------------------------")
+	  for k, v in pairs(loc_template) do
+	    if k == 'colours' then
+		  loc_vars.colours = {}
+		  for k2, v2 in pairs(v) do
+		    if self.ability.extra[v2] == 'get_suit' then
+		      loc_vars.colours[#loc_vars.colours+1] = G.C.SUITS[self.base.suit or "Hearts"]
+			else
+		      loc_vars.colours[#loc_vars.colours+1] = G.C[string.upper(self.ability.extra[v2])] or G.C.SUITS[self.ability.extra[v2]]
+			end
+		  end
+		elseif self.ability.extra[v] == 'get_suit' then
+		  loc_vars[#loc_vars+1] = self.base.suit or "Hearts"
+		else
+	      loc_vars[#loc_vars+1] = self.ability.extra[v]
+		end
+	  end
+	  loc_vars.new_enhance = new_enhance
+	  print_table(loc_vars)
+      return generate_card_ui(self.config.center, nil, loc_vars, self.ability.set, generate_fake_badges(self, loc_vars))
     end
 end
 
 local generate_card_ui_ref = generate_card_ui
 function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end)
-    if specific_vars ~= nil and specific_vars.new_enhance == true then
-      full_UI_table = generate_card_ui_ref(G.P_CENTERS['m_mult'], nil, {420}, card_type, badges, hide_desc, main_start, main_end)
-      if specific_vars.playing_card then
-        full_UI_table.name = {}
-        localize{type = 'other', key = 'playing_card', set = 'Other', nodes = full_UI_table.name, vars = {localize(specific_vars.value, 'ranks'), localize(specific_vars.suit, 'suits_plural'), colours = {specific_vars.colour}}}
-        full_UI_table.name = full_UI_table.name[1]
+    if specific_vars and specific_vars.new_enhance then
+	  local e = Enhancements[specific_vars.new_enhance]
+      if not full_UI_table then 
+        first_pass = true
+        full_UI_table = generate_card_ui("c_bonus",nil,{chips = 30},card_type,badges,hide_desc,main_start,main_end)
       end
-      return full_UI_table
-    end
-    return generate_card_ui_ref(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end)
+	  local desc_nodes = not full_UI_table.name and full_UI_table.main or full_UI_table.info
+	  if e.playing_card and specific_vars.nominal_chips then
+        localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+      end
+      localize{type = 'descriptions', key = _c.key, set = _c.set, nodes = desc_nodes, vars = specific_vars}
+	  badges[1] = e
+	  return full_UI_table
+	else
+      return generate_card_ui_ref(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end)
+	end
 end
 
 function print_table(_table, idx)
@@ -396,19 +411,19 @@ end
 local card_h_popup_ref = G.UIDEF.card_h_popup
 function G.UIDEF.card_h_popup(card)
     local t = card_h_popup_ref(card)
-    local badges = t.nodes[1].nodes[1].nodes[1].nodes[3]
+    local badges = t.nodes[1].nodes[1].nodes[1].nodes[3] or {}
     --sendDebugMessage("Looking for badges...")
-    badges = badges and badges.nodes or nil
+    badges = badges and badges.nodes or {}
     if card.config then
       if card.config.center then
         if card.config.center.key then
           for k, v in pairs(Enhancements) do
             if v.slug == card.config.center.key then
               local gen = generate_fake_badges(card, {})
+              badges[1] = create_badge(card.ability.name, G.C.SECONDARY_SET.Enhanced, nil, 1.2)
               for k,v in pairs(gen) do
                 badges[#badges + 1] = create_badge(localize(v, "labels"), get_badge_colour(v))
               end
-              badges[1] = create_badge(card.ability.name, G.C.SECONDARY_SET.Enhanced, nil, 1.2)
               local mod_name = Enhancements[k].mod_name
               mod_name = mod_name:sub(1, 16)
               local len = string.len(mod_name)
@@ -421,182 +436,6 @@ function G.UIDEF.card_h_popup(card)
       end
     end
     return t
-end
-
-function fake_localize(_c, loc_vars, def_scale)
-    -- local loc_text = ""
-    -- print_table(loc_vars)
-    -- if loc_vars.new_enhance ~= nil then
-      --sendDebugMessage(loc_vars.new_enhance)
-      --loc_text = G.localization.descriptions["Enhanced"][loc_vars.new_enhance].text
-    -- else
-      loc_text = G.localization.descriptions["Enhanced"][_c.key].text
-      --print_table(loc_text)
-    -- end
-    --sendDebugMessage("G.localization.descriptions[".._c.set.."][".._c.key.."].text has "..#loc_text.." lines...?")
-    --local times = (#loc_vars == 1 and "once") or (#loc_vars == 2 and "twice") or #loc_vars.." times"
-    --sendDebugMessage("Should go through "..#loc_text.." lines "..times)
-    --sendDebugMessage("loc_def length is "..#loc_text)
-    --sendDebugMessage("table.main length is "..(#full_UI_table.main or 0).." x "..(#full_UI_table.main[1] or 0))
-    def_scale  = def_scale or 0.32
-    --sendDebugMessage("---------------------------------------------")
-
-    --sendDebugMessage("---------------------------------------------")
-
-    local default = {}
-    local formatting = {{}}
-
-    --replace loc_var values
-    for j=1, #loc_text do
-      if type(loc_text[j][1]) == table then break
-      else
-        default[j] = loc_text[j]
-      end
-      for i=1, #loc_vars do
-        --sendDebugMessage(j..": ")
-        default[j] = default[j]:gsub("#"..i.."#",loc_vars[i])
-        --sendDebugMessage(" "..default[j])
-        end
-    end
-
-    if loc_vars.bonus_chips then
-      table.insert(loc_text, 1, "{C:chips}+"..loc_vars.bonus_chips.."{} bonus chips")
-    end
-
-    --print_table(formatting)
-
-    --gather other formatting
-    --sendDebugMessage("---------------------------------------------")
-    --sendDebugMessage("---------------------------------------------")
-    --sendDebugMessage("Adjusting colouring and scaling...")
-    --sendDebugMessage("---------------------------------------------")
-    for i=1, #default do
-      --sendDebugMessage("Loop "..i)
-      --print_table(default[i])
-      local line = default[i].."{}"
-      local j = 1
-      local k = 1
-      local sdm = ""
-      local formats = ""
-      while string.find(line,"}") ~= nil do
-        local parse = string.find(line,"{")
-        local _end = string.find(line,"}")
-        if _end == line:len()-1 then
-          break
-        end
-        if formatting[i] == nil then
-          formatting[i] = {}
-        end
-        if formatting[i][j] == nil then
-          formatting[i][j] = {
-            n = 1,
-            config =
-            {
-              colour = G.C.BLACK,
-              text = "",
-              scale = def_scale
-            }
-          }
-        end
-        --sendDebugMessage(line..": "..parse..", ".._end)
-        if parse == 1 then
-          k = 1
-          --sendDebugMessage(tostring(line == nil))
-          formats = formats..(string.sub(line,parse+1,_end-1) or "")..","
-          --sendDebugMessage(formats)
-          line = string.sub(line,_end+1)
-        else
-          if string.len(formats) > 0 then
-            formats = string.gsub(formats,", ",",")..","
-            local letter = ""
-            local var = ""
-            formatting[i][j].config.text = line:sub(1,line:find("{")-1)
-            while true do
-              letter = string.upper(string.sub(formats,1,1))
-              var = string.sub(formats,3,string.find(formats,",")-1)
-              if type(var) == 'string' then
-                var = var:upper()
-                var = var:gsub("ATTENTION","IMPORTANT")
-              end
-              --sendDebugMessage(letter..":"..var)
-              if letter == "S" then
-                formatting[i][j].config.scale = def_scale*(var or 1)
-                --sendDebugMessage("Should be scaling text by "..100*var.."%")
-              elseif letter == "V" then
-                local idx = 0
-                idx = idx + var
-                local colour_test = loc_vars.colours[idx]
-                if colour_test ~= nil then
-                  formatting[i][j].config.colour = colour_test
-                --sendDebugMessage("Should be changing colour to ("..(formatting[i][j].config.colour[1]*255)..", "..(formatting[i][j].config.colour[2]*255)..", "..(formatting[i][j].config.colour[3]*255)..", "..(formatting[i][j].config.colour[4]*255)..")")
-                end
-              elseif letter == "C" then
-                var = (var or 'BLACK')
-                local colour_test = G.C[string.upper(var)]
-                if colour_test == nil then
-                  colour_test = G.C.SUITS[string.upper(string.sub(var,1,1))..string.lower(string.sub(var,2,-1))]
-                  if colour_test == nil  then
-                    colour_test = G.C.UI['TEXT_'..string.upper(var)]
-                  end
-                end
-                if formatting[i][j].nodes == nil then
-                  formatting[i][j].config.colour = colour_test
-                else
-                  formatting[i][j].nodes[1].config.colour = colour_test
-                end
-                --sendDebugMessage("Should be changing colour to ("..(formatting[i][j].config.colour[1]*255)..", "..(formatting[i][j].config.colour[2]*255)..", "..(formatting[i][j].config.colour[3]*255)..", "..(formatting[i][j].config.colour[4]*255)..")")
-              elseif letter == "X" then
-                var = (var or 'WHITE')
-                formatting[i][j].nodes = {}
-                formatting[i][j].nodes[1] = {
-                  n = 1
-                }
-                formatting[i][j].nodes[1].config =
-                {
-                  colour = G.C.WHITE,
-                  scale = formatting[i][j].config.scale or def_scale,
-                  text = string.sub(line, 1, parse-1),
-                }
-                formatting[i][j].n = 3
-                formatting[i][j].config.scale = nil
-                formatting[i][j].config.text = nil
-                var = string.upper(var)
-                formatting[i][j].config.colour = G.C[var] or G.C.SUITS[var] or G.C.UI['BACKGROUND_'..var] or G.C.BLACK
-                formatting[i][j].config.padding = 0.03
-                formatting[i][j].config.res = 0.15
-                formatting[i][j].config.align = 'm'
-                formatting[i][j].config.r = 0.05
-                --sendDebugMessage("Should be making node with background colour ("..(formatting[i][j].config.colour[1]*255)..", "..(formatting[i][j].config.colour[2]*255)..", "..(formatting[i][j].config.colour[3]*255)..", "..(formatting[i][j].config.colour[4]*255)..")")
-              else
-                --sendDebugMessage(letter)
-              end
-            if string.find(formats,",") == string.len(formats)-1 then
-              formats = ""
-              break
-            end
-            formats = string.sub(formats,string.find(formats,",")+1)
-            end
-          end
-          if (formatting[i][j].nodes == nil) then
-            formatting[i][j].config.text = string.sub(line, 1, parse-1)
-          end
-          --sendDebugMessage("added text: "..formatting[i][j].config.text)
-          j = j + 1
-          line = string.sub(line,parse)
-        end
-        if line:find("{") == line:len() - 2 and line:find("}") == line:len() - 1 then
-          --sendDebugMessage(line)
-          formatting[i][j].config.text = line:sub(1,-3)
-          break
-        end
-      end
-      for j = 1, #formatting[i] do
-        --sendDebugMessage("["..i.."]["..j.."]: ")
-
-      end
-    end
-    --print_table(formatting)
-    return formatting
 end
 ----------------------------------------------
 ------------MOD CODE END----------------------
